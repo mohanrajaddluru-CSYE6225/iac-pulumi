@@ -7,45 +7,45 @@ var vpcCIDR = config.require('cidrBlock');
 const publicCidrBlock = config.require('publicCidrBlock');
 const tags = config.getObject('tags');
 
+const vpc = new aws.ec2.Vpc('my-vpc', {
+    cidrBlock: vpcCIDR,
+    enableDnsSupport: true,
+    enableDnsHostnames: true,
+    tags : { 
+        "Name" : "VPC CREATED FROM Script" 
+    }
+});
+
+const internetGw = new aws.ec2.InternetGateway("internetGw", {
+    vpcId: vpc.id,
+    tags: {
+        Name: "createdGateway",
+    },
+});
+
+const publicRouteTable = new aws.ec2.RouteTable('publicRouteTable', {
+    vpcId: vpc.id,
+    routes: [
+        {
+            cidrBlock: publicCidrBlock,
+            gatewayId: internetGw.id,
+        }],
+    tags: { 
+        "Name" : "PublicRouteTable" 
+    },
+  });
+
+
+  const privateRouteTable = new aws.ec2.RouteTable('privateRouteTable', {
+    vpcId: vpc.id, // Replace with your VPC ID
+    tags: { 
+        "Name" : "PrivateRouteTable" 
+    },
+  });
+
+
 aws.getAvailabilityZones({state : 'available'}).then(availableZones => {
     const availabilityZones = availableZones.names.slice(0,3);
-    const vpc = new aws.ec2.Vpc('my-vpc', {
-        cidrBlock: vpcCIDR,
-        enableDnsSupport: true,
-        enableDnsHostnames: true,
-        tags : { 
-            "Name" : "VPC CREATED FROM Script" 
-        }
-    });
-    
-    const internetGw = new aws.ec2.InternetGateway("internetGw", {
-        vpcId: vpc.id,
-        tags: {
-            Name: "createdGateway",
-        },
-    });
-    
-    
-    const publicRouteTable = new aws.ec2.RouteTable('publicRouteTable', {
-        vpcId: vpc.id,
-        routes: [
-            {
-                cidrBlock: publicCidrBlock,
-                gatewayId: internetGw.id,
-            }],
-        tags: { 
-            "Name" : "PublicRouteTable" 
-        },
-      });
-    
-    const privateRouteTable = new aws.ec2.RouteTable('privateRouteTable', {
-        vpcId: vpc.id, // Replace with your VPC ID
-        tags: { 
-            "Name" : "PrivateRouteTable" 
-        },
-      });
-    
-    
     console.log(availabilityZones);
     
     var i=1;
@@ -95,6 +95,5 @@ aws.getAvailabilityZones({state : 'available'}).then(availableZones => {
         privateSubnets.push(privateSubnetCIDR);
         i=i+1;
     });
-
     console.log(publicSubnets, privateSubnets)
 });
