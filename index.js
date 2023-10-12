@@ -7,6 +7,7 @@ var vpcCIDR = config.require('cidrBlock');
 const publicCidrBlock = config.require('publicCidrBlock');
 const tags = config.getObject('tags');
 
+
 const vpc = new aws.ec2.Vpc('my-vpc', {
     cidrBlock: vpcCIDR,
     enableDnsSupport: true,
@@ -46,6 +47,7 @@ const publicRouteTable = new aws.ec2.RouteTable('publicRouteTable', {
 
 aws.getAvailabilityZones({state : 'available'}).then(availableZones => {
     const availabilityZones = availableZones.names.slice(0,3);
+
     console.log(availabilityZones);
     
     var i=1;
@@ -95,5 +97,3 @@ aws.getAvailabilityZones({state : 'available'}).then(availableZones => {
         privateSubnets.push(privateSubnetCIDR);
         i=i+1;
     });
-    console.log(publicSubnets, privateSubnets)
-});
