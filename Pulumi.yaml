@@ -1,0 +1,6 @@
+name: iac_pulumi
+runtime:
+  name: nodejs
+  options:
+    typescript: false
+description: Pulumi code to build the VPC and subnets in AWS
