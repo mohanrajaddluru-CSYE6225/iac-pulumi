@@ -1,23 +1,14 @@
 const pulumi = require('@pulumi/pulumi');
 const aws = require('@pulumi/aws');
-//const ip = require("ip");
-//const { Address4 } = require('ip-address');
 
 const config = new pulumi.Config();
 
-
-
-const awsRegion = config.get('region');
 var vpcCIDR = config.require('cidrBlock');
 const publicCidrBlock = config.require('publicCidrBlock');
 const tags = config.getObject('tags');
 
-aws.config.region = awsRegion;
-
-console.log(awsRegion,"this is my configured region");
-
-aws.getAvailabilityZones({awsRegion}).then(availableZones => {
-    const availabilityZones = availableZones.names.slice(0,6);
+aws.getAvailabilityZones({state : 'available'}).then(availableZones => {
+    const availabilityZones = availableZones.names.slice(0,3);
     const vpc = new aws.ec2.Vpc('my-vpc', {
         cidrBlock: vpcCIDR,
         enableDnsSupport: true,
