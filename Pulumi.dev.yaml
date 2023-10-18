@@ -1,8 +1,8 @@
 encryptionsalt: v1:42tP1QLebt0=:v1:v7KyiUTcU6ADUdKx:JpmGHQH5/Ylau5aKRDhbmEqnnNP5OQ==
 config:
-  aws:region: ca-central-1
-
+  aws:region: us-east-1
   aws:profile: mohan-dev-iam
+  launchAMIID: "ami-08da8b5a5bc71be7e"
   cidrBlock: 10.10.0.0/16
   publicCidrBlock: 0.0.0.0/0
   tags:
