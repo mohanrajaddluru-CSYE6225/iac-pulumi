@@ -7,6 +7,7 @@ var vpcCIDR = config.require('cidrBlock');
 const publicCidrBlock = config.require('publicCidrBlock');
 const launchAmi = config.require('launchAMIID');
 const tags = config.getObject('tags');
+const keyPair = config.require('keyPairName');
 
 
 const vpc = new aws.ec2.Vpc('my-vpc', {
@@ -32,25 +33,6 @@ const debianAmi = aws.ec2.getAmi({
     ],
     owners: ["387983162026"],
 });
-
-// const devIamKeyPair = aws.ec2.getKeyPair({
-//     keyName: "dev-iam",
-//     includePublicKey: true,
-
-// });
-
-
-//import * as pulumi from "@pulumi/pulumi";
-//import * as aws from "@pulumi/aws";
-
-//const deployer = new aws.ec2.KeyPair("deployer", {publicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQD3F6tyPEFEzV0LX3X8BsXdMsQz1x2cEikKDEY0aIj41qgxMCP/iteneqXSIFZBp5vizPvaoIR3Um9xK7PGoW8giupGn+EPuxIA4cDM4vzOqOkiMPhz5XK0whEjkVzTo4+S0puvDZuwIsdiW9mxhJc7tgBNL0cYlWSYVkz4G/fslNfRPW5mYAM49f4fhtxPb5ok4Q2Lg9dPKVHO/Bgeu5woMc7RY0p1ej6D4CKFE6lymSDJpW0YHX/wqE9+cfEauh7xZcG0q9t2ta6F6fmX0agvpFyZo8aFbXeUBr7osSCJNgvavWbM/06niWrOvYX2xwWdhXmXSrbX8ZbabVohBK41 email@example.com"});
-
-
-const localKeypair = new aws.ec2.KeyPair("dev-iam-keypair", {
-    publicKey: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDO4DrIzF95EOvApm62fE6stieemA8Kh3txdVLWav+HZ1v7eiha5tnKCjCvzGGYJVYTOp5V8xJlZCnQFBXdSt5kqBNKRwgtWHq9zqgt7a9kWBxHIhSoOC9rT9ytRDO5Oz9MJTvNW1+Z13ZpUMLcyM8z6p1clVDbsK2VQFaWMmqnTdxxhcVdEF5smcW6zmY1fC9AXs5vryyJRbe5pPdXmQtNSVaZ0qSNu5ALdLHgvgArY6528OMu1HE1UFmIB1zVMQLZ5XFDZSZoAKwoOrCUurcfKxhBLOBghqyvklyJURQ3fOvlJHzHA9LMCGtmtx8ge85iOWhGP8H3WfkIeQPtlbJ3azwBfRM0WIJOt0vsIV4bzFraXoEZyks9YXmHiYlOVAJkwXL0p6wXLcvnQSKSdgMKHbgvX6hrMQrAp83yUEDg6a7TdGILKWD4GRpzi4lokEFA8DHNxt9LfHoHHUpWJ0XOBl7Z4iPj6hGt9IZXG2GrMQ7FFuVs9yHECSTPUKAI6F8= mohanrajaddluru@Mohans-MacBook-Air.local"
-});
-
-
 
 const internetGw = new aws.ec2.InternetGateway("internetGw", {
     vpcId: vpc.id,
@@ -176,7 +158,7 @@ const availabilityZonesMain = aws.getAvailabilityZones({state : 'available'}).th
         disableApiTermination: 0,
         volumeSize: 25,
         volumeType: "gp2",
-        keyName: "development",
+        keyName: keyPair,
         associatePublicIpAddress : 1,
         tags: {
             Name: "dev-iam-1",
