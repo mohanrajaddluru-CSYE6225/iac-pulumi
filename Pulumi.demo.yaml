@@ -1,0 +1,11 @@
+encryptionsalt: v1:YYO6uFZgsQQ=:v1:Kq6hzmewPtkrnPBk:9+vqeJ/D0bkrq2cx94Fr5Ii8IavzWw==
+config:
+  aws:region: us-east-1
+  aws:profile: mohan-demo-iam
+  launchAMIID: "ami-00f38631413c7f075"
+  cidrBlock: 10.20.0.0/16
+  keyPairName: "demo-iam"
+  publicCidrBlock: 0.0.0.0/0
+  tags:
+    {Name : Created from Script}
+
