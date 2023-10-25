@@ -6,6 +6,16 @@ var vpcCIDR = config.require('cidrBlock');
 const publicCidrBlock = config.require('publicCidrBlock');
 const launchAmi = config.require('launchAMIID');
 const keyPair = config.require('keyPairName');
+const dbUser = config.require('dbUser');
+const dbPasswd = config.require('dbPasswd');
+const port = config.require('port');
+const dbName = config.require('dbName');
+const dbInstanceClass = config.require('dbInstanceClass');
+const dbParamterGroup = config.require('dbParamterGroup');
+const mysqlFamily = config.require('mysqlFamily');
+
+
+
 
 const myVPC = new aws.ec2.Vpc("Webapp VPC", {
     cidrBlock:vpcCIDR,
@@ -89,16 +99,16 @@ available
         console.log(privateSubnets,"private subnets");
         const mySQLRDS = new aws.rds.Instance("webappmysql", {
             allocatedStorage: 20,
-            dbName: "test",
+            dbName: dbName,
             engine: "mysql",
             engineVersion: "8.0.33",
-            instanceClass: "db.t2.micro",
-            parameterGroupName: "mohan",
-            password: "password",
+            instanceClass: dbInstanceClass,
+            parameterGroupName: rdsParamterGroup.name,
+            password: dbPasswd,
             skipFinalSnapshot: true,
-            username: "mohan",
+            username: dbUser,
             dbSubnetGroupName: new aws.rds.SubnetGroup(`rdssubnetgroup-sg`, {
-                subnetIds: [privateSubnets[0],privateSubnets[1]],
+                subnetIds: privateSubnets,
             }),
             multiAz:0,
             port:3306,
@@ -128,7 +138,7 @@ available
             volumeType: "gp2",
             keyName: keyPair,
             associatePublicIpAddress : 1,
-            userData: pulumi.interpolate`#!/bin/bash\nrm webapp/.env\necho "DATABASE_HOST: ${hostname}" >> /home/admin/webapp/.env\necho "DATABASE_USER: mohan" >> /home/admin/webapp/.env\necho "DATABASE_PASSWORD: password" >> /home/admin/webapp/.env\necho "DATABASE_NAME: test" >> /home/admin/webapp/.env\necho "PORT: 8080" >> /home/admin/webapp/.env\n`,
+            userData: pulumi.interpolate`#!/bin/bash\nrm /home/webappuser/webapp/.env\necho "DATABASE_HOST: ${hostname}" >> /home/webappuser/webapp/.env\necho "DATABASE_USER: ${dbUser}" >> /home/webappuser/webapp/.env\necho "DATABASE_PASSWORD: ${dbPasswd}" >> /home/webappuser/webapp/.env\necho "DATABASE_NAME: ${dbName}" >> /home/webappuser/webapp/.env\necho "PORT: ${port}" >> /home/webappuser/webapp/.env\nchown webappuser:webappuser /home/webappuser/webapp/.env`,
             tags: 
             {
                 Name: "dev-iam-2",
@@ -200,6 +210,24 @@ const rdsSecurityGroup = new aws.ec2.SecurityGroup("rds-security-group", {
         Name: "RDS Security Group"
     }
 })
+
+
+const rdsParamterGroup = new aws.rds.ParameterGroup("default", {
+    name: "rds-parameter-group",
+    family: mysqlFamily,
+    description: `Mysql ${mysqlFamily} Family group`,
+    parameters: [
+        {
+            name: "max_connections",
+            value: "100",
+        },
+        {
+            name: "innodb_buffer_pool_size",
+            value: "268435456",
+        },
+    ],
+});
+
 
 
 exports.vpcId = myVPC.id;
