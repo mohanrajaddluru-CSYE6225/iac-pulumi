@@ -1,8 +1,8 @@
-encryptionsalt: v1:42tP1QLebt0=:v1:v7KyiUTcU6ADUdKx:JpmGHQH5/Ylau5aKRDhbmEqnnNP5OQ==
+encryptionsalt: v1:PF1+eCNPeMk=:v1:C2pfG39Ps8bQ8An8:Vz7MCmjv+xpzzaxxKYOdnJFE2aRzHg==
 config:
   aws:region: us-east-1
   aws:profile: mohan-dev-iam
-  launchAMIID: "ami-084fc584cf8232d6f"
+  launchAMIID: "ami-0c150f9a31e751116"
   cidrBlock: 10.10.0.0/16
   keyPairName: "development"
   publicCidrBlock: 0.0.0.0/0
