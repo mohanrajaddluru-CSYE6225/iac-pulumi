@@ -13,6 +13,8 @@ const dbName = config.require('dbName');
 const dbInstanceClass = config.require('dbInstanceClass');
 const dbParamterGroup = config.require('dbParamterGroup');
 const mysqlFamily = config.require('mysqlFamily');
+const zoneId = config.require('zoneId');
+const subDomainName = config.require('subDomainName');
 
 
 
@@ -57,7 +59,7 @@ available
 .then(availableZones => 
     {
         const currZones = availableZones.names.slice(0,3);
-        console.log(currZones);
+        // console.log(currZones);
         var i=1;
         let publicSubnets = [];
         let privateSubnets = [];
@@ -95,8 +97,8 @@ available
             privateSubnets.push(privateSubnet.id);
             i=i+1;
         })
-        console.log(publicSubnets,"public subnets");
-        console.log(privateSubnets,"private subnets");
+        // console.log(publicSubnets,"public subnets");
+        // console.log(privateSubnets,"private subnets");
         const mySQLRDS = new aws.rds.Instance("webappmysql", {
             allocatedStorage: 20,
             dbName: dbName,
@@ -127,6 +129,30 @@ available
             return parts[0]; // Take the first part, which is the hostname
         });
 
+        const ec2Role = new aws.iam.Role("EC2Role", {
+            assumeRolePolicy: JSON.stringify({
+                Version: "2012-10-17",
+                Statement: [
+                    {
+                        Action: "sts:AssumeRole",
+                        Effect: "Allow",
+                        Principal: {
+                            Service: "ec2.amazonaws.com",
+                        },
+                    },
+                ],
+            }),
+        });
+     
+        const cloudWatchAgentPolicyAttachment = new aws.iam.RolePolicyAttachment("ec2CloudWatchPolicy", {
+            role: ec2Role.name,
+            policyArn: "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
+        });
+     
+        const instanceProfile = new aws.iam.InstanceProfile("EC2InstanceProfile", {
+            role: ec2Role.name,
+        });
+
         const createEC2 = new aws.ec2.Instance("CreateEC2", {
             ami: launchAmi,
             instanceType: "t2.micro",
@@ -137,20 +163,27 @@ available
             volumeSize: 25,
             volumeType: "gp2",
             keyName: keyPair,
+            iamInstanceProfile: instanceProfile.name,
             associatePublicIpAddress : 1,
-            userData: pulumi.interpolate`#!/bin/bash\nrm /home/webappuser/webapp/.env\necho "DATABASE_HOST: ${hostname}" >> /home/webappuser/webapp/.env\necho "DATABASE_USER: ${dbUser}" >> /home/webappuser/webapp/.env\necho "DATABASE_PASSWORD: ${dbPasswd}" >> /home/webappuser/webapp/.env\necho "DATABASE_NAME: ${dbName}" >> /home/webappuser/webapp/.env\necho "PORT: ${port}" >> /home/webappuser/webapp/.env\nchown webappuser:webappuser /home/webappuser/webapp/.env`,
+            userData: pulumi.interpolate`#!/bin/bash\nrm /home/webappuser/webapp/.env\necho "DATABASE_HOST: ${hostname}" >> /home/webappuser/webapp/.env\necho "DATABASE_USER: ${dbUser}" >> /home/webappuser/webapp/.env\necho "DATABASE_PASSWORD: ${dbPasswd}" >> /home/webappuser/webapp/.env\necho "DATABASE_NAME: ${dbName}" >> /home/webappuser/webapp/.env\necho "PORT: ${port}" >> /home/webappuser/webapp/.env\nchown webappuser:webappuser /home/webappuser/webapp/.env\nsudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/cloudwatch-config.json`,
             tags: 
             {
                 Name: "dev-iam-2",
             }
         });
 
-        exports.createEC2=createEC2;
-        exports.mySQLRDS=mySQLRDS;
+        const domainrecord = new aws.route53.Record("domainrecord", {
+            zoneId: zoneId,
+            name: '',
+            type: "A",
+            records: [createEC2.publicIp],
+            ttl: 300
+        });
+
+        // exports.createEC2=createEC2;
+        // exports.mySQLRDS=mySQLRDS;
     }
 );
-
-
 
 const appSecurityGroup = new aws.ec2.SecurityGroup("my-app-security-group", {
     description: "My security group",
@@ -230,8 +263,12 @@ const rdsParamterGroup = new aws.rds.ParameterGroup("default", {
 
 
 
+
+
 exports.vpcId = myVPC.id;
 exports.internetGw = internetGw.id;
 exports.publicRouteTable=publicRouteTable.id;
 exports.privateRouteTable=privateRouteTable.id;
 exports.rdsSecurityGroup=rdsSecurityGroup.id;
+// exports.policyAttachment=policyAttachment.id;
+// exports.role=role;
