@@ -2,7 +2,7 @@ encryptionsalt: v1:42tP1QLebt0=:v1:v7KyiUTcU6ADUdKx:JpmGHQH5/Ylau5aKRDhbmEqnnNP5
 config:
   aws:region: us-east-1
   aws:profile: mohan-dev-iam
-  launchAMIID: "ami-064ef92535206f706"
+  launchAMIID: "ami-0236ce7e25c4b646d"
   cidrBlock: 10.10.0.0/16
   keyPairName: "development"
   publicCidrBlock: 0.0.0.0/0
@@ -14,6 +14,5 @@ config:
   mysqlFamily: mysql8.0
   dbParamterGroup: mohan
   zoneId: Z0715549LURCEQE4WQA5
-  subDomainName: dev
   tags:
     {Name : Created from Script}

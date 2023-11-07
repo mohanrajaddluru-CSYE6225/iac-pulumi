@@ -14,7 +14,6 @@ const dbInstanceClass = config.require('dbInstanceClass');
 const dbParamterGroup = config.require('dbParamterGroup');
 const mysqlFamily = config.require('mysqlFamily');
 const zoneId = config.require('zoneId');
-const subDomainName = config.require('subDomainName');
 
 
 
