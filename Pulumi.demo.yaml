@@ -2,7 +2,7 @@ encryptionsalt: v1:YYO6uFZgsQQ=:v1:Kq6hzmewPtkrnPBk:9+vqeJ/D0bkrq2cx94Fr5Ii8Iavz
 config:
   aws:region: us-east-1
   aws:profile: mohan-demo-iam
-  launchAMIID: "ami-0236ce7e25c4b646d"
+  launchAMIID: "ami-04ab56b08596e286f"
   cidrBlock: 10.10.0.0/16
   keyPairName: "demo-iam"
   publicCidrBlock: 0.0.0.0/0
