@@ -1,10 +1,11 @@
 encryptionsalt: v1:YYO6uFZgsQQ=:v1:Kq6hzmewPtkrnPBk:9+vqeJ/D0bkrq2cx94Fr5Ii8IavzWw==
 config:
+  config:
   aws:region: us-east-1
-  aws:profile: mohan-demo-iam
-  launchAMIID: "ami-04ab56b08596e286f"
+  aws:profile: mohan-dev-iam
+  launchAMIID: "ami-0d99aef9e03f4a649"
   cidrBlock: 10.10.0.0/16
-  keyPairName: "demo-iam"
+  keyPairName: "development"
   publicCidrBlock: 0.0.0.0/0
   dbPasswd: password
   port: 8080
@@ -13,7 +14,7 @@ config:
   dbInstanceClass: db.t2.micro
   mysqlFamily: mysql8.0
   dbParamterGroup: mohan
-  zoneId: Z047578737J55OCIYHOAJ
+  zoneId: Z0715549LURCEQE4WQA5
+  typeOfInstance: t2.micro
   tags:
     {Name : Created from Script}
-

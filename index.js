@@ -14,6 +14,7 @@ const dbInstanceClass = config.require('dbInstanceClass');
 const dbParamterGroup = config.require('dbParamterGroup');
 const mysqlFamily = config.require('mysqlFamily');
 const zoneId = config.require('zoneId');
+const typeOfInstance = config.require('typeOfInstance');
 
 
 
@@ -96,37 +97,86 @@ available
             privateSubnets.push(privateSubnet.id);
             i=i+1;
         })
-        // console.log(publicSubnets,"public subnets");
-        // console.log(privateSubnets,"private subnets");
-        const mySQLRDS = new aws.rds.Instance("webappmysql", {
-            allocatedStorage: 20,
-            dbName: dbName,
-            engine: "mysql",
-            engineVersion: "8.0.33",
-            instanceClass: dbInstanceClass,
-            parameterGroupName: rdsParamterGroup.name,
-            password: dbPasswd,
-            skipFinalSnapshot: true,
-            username: dbUser,
-            dbSubnetGroupName: new aws.rds.SubnetGroup(`rdssubnetgroup-sg`, {
-                subnetIds: privateSubnets,
-            }),
-            multiAz:0,
-            port:3306,
-            publiclyAccessible:0,
-            vpcSecurityGroupIds:[rdsSecurityGroup.id],
+
+
+        const loadBalancerSecGroup = new aws.ec2.SecurityGroup("loadBalancerSecGroup", {
+            description: "Security Group for load balancer",
+            vpcId: myVPC.id,
+            ingress: [
+                {
+                    protocol: "tcp",
+                    fromPort: 80,
+                    toPort: 80,
+                    cidrBlocks: ["0.0.0.0/0"],
+                },
+                {
+                    protocol: "tcp",
+                    fromPort: 443,
+                    toPort: 443,
+                    cidrBlocks: ["0.0.0.0/0"],
+                }
+            ],
+            egress:[{
+                fromPort: 0,
+                toPort: 0,
+                protocol: "-1",
+                cidrBlocks: ["0.0.0.0/0"],
+            }],
             tags: 
             {
-                Name: "webapp-rds-mysql",
+                Name: "Load balancer Security Group"
+            }
+        })
+
+        const appSecurityGroup = new aws.ec2.SecurityGroup("my-app-security-group", {
+            description: "My security group",
+            vpcId: myVPC.id,
+            ingress: [{
+                fromPort: 22,
+                toPort: 22,
+                protocol: "tcp",
+                cidrBlocks: ["0.0.0.0/0"],
+            },
+            {
+                fromPort: 8080,
+                toPort: 8080,
+                protocol: "tcp",
+                securityGroups: [ loadBalancerSecGroup.id ],
+            }],
+            egress:[{
+                fromPort: 0,
+                toPort: 0,
+                protocol: "-1",
+                cidrBlocks: ["0.0.0.0/0"],
+            }],
+            tags: 
+            {
+                Name: "Application Security Group"
             }
         });
 
-        const rdsEndpoint = mySQLRDS.endpoint;
-
-        const hostname = rdsEndpoint.apply(endpoint => {
-            const parts = endpoint.split(":"); // Split the endpoint by ":"
-            return parts[0]; // Take the first part, which is the hostname
-        });
+        const rdsSecurityGroup = new aws.ec2.SecurityGroup("rds-security-group", {
+            description: "Security group for rds",
+            vpcId: myVPC.id,
+            ingress: [
+                {
+                    protocol: "tcp",
+                    fromPort: 3306,
+                    toPort: 3306,
+                    securityGroups: [ appSecurityGroup.id ],
+                },
+            ],
+            egress:[{
+                fromPort: 0,
+                toPort: 0,
+                protocol: "-1",
+                cidrBlocks: ["0.0.0.0/0"],
+            }],
+            tags: 
+            {
+                Name: "RDS Security Group"
+            }
+        })
 
         const ec2Role = new aws.iam.Role("EC2Role", {
             assumeRolePolicy: JSON.stringify({
@@ -152,96 +202,209 @@ available
             role: ec2Role.name,
         });
 
-        const createEC2 = new aws.ec2.Instance("CreateEC2", {
-            ami: launchAmi,
-            instanceType: "t2.micro",
-            vpcSecurityGroupIds: [appSecurityGroup.id],
-            vpcId: myVPC.id,
-            subnetId: publicSubnets[0],
-            disableApiTermination: 0,
-            volumeSize: 25,
-            volumeType: "gp2",
-            keyName: keyPair,
-            iamInstanceProfile: instanceProfile.name,
-            associatePublicIpAddress : 1,
-            userData: pulumi.interpolate`#!/bin/bash\nrm /home/webappuser/webapp/.env\necho "DATABASE_HOST: ${hostname}" >> /home/webappuser/webapp/.env\necho "DATABASE_USER: ${dbUser}" >> /home/webappuser/webapp/.env\necho "DATABASE_PASSWORD: ${dbPasswd}" >> /home/webappuser/webapp/.env\necho "DATABASE_NAME: ${dbName}" >> /home/webappuser/webapp/.env\necho "PORT: ${port}" >> /home/webappuser/webapp/.env\nchown webappuser:webappuser /home/webappuser/webapp/.env\nsudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/cloudwatch-config.json`,
+
+
+        const mySQLRDS = new aws.rds.Instance("webappmysql", {
+            allocatedStorage: 20,
+            dbName: dbName,
+            engine: "mysql",
+            engineVersion: "8.0.33",
+            instanceClass: dbInstanceClass,
+            parameterGroupName: rdsParamterGroup.name,
+            password: dbPasswd,
+            skipFinalSnapshot: true,
+            username: dbUser,
+            dbSubnetGroupName: new aws.rds.SubnetGroup(`rdssubnetgroup-sg`, {
+                subnetIds: privateSubnets,
+            }),
+            multiAz:0,
+            port:3306,
+            publiclyAccessible:0,
+            vpcSecurityGroupIds:[rdsSecurityGroup.id],
             tags: 
             {
-                Name: "dev-iam-2",
+                Name: "webapp-rds-mysql",
             }
         });
+
+        const rdsEndpoint = mySQLRDS.endpoint;
+        
+        const hostname = rdsEndpoint.apply(endpoint => {
+            const parts = endpoint.split(":"); // Split the endpoint by ":"
+            return parts[0]; // Take the first part, which is the hostname
+        });
+
+
+        const userData = pulumi.interpolate`#!/bin/bash\nrm /home/webappuser/webapp/.env\necho "DATABASE_HOST: ${hostname}" >> /home/webappuser/webapp/.env\necho "DATABASE_USER: ${dbUser}" >> /home/webappuser/webapp/.env\necho "DATABASE_PASSWORD: ${dbPasswd}" >> /home/webappuser/webapp/.env\necho "DATABASE_NAME: ${dbName}" >> /home/webappuser/webapp/.env\necho "PORT: ${port}" >> /home/webappuser/webapp/.env\nchown webappuser:webappuser /home/webappuser/webapp/.env\nsudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/cloudwatch-config.json`;
+
+        const base64UserData = userData.apply(data => Buffer.from(data).toString('base64'));
+
+        const webappLaunchTemplate = new aws.ec2.LaunchTemplate("webappLaunchTemplate", {
+            imageId: launchAmi ,
+            instanceType: typeOfInstance,
+            keyName : keyPair,
+            associatePublicIpAddress : true,
+            vpcId: myVPC.id,
+            vpcSecurityGroupIds: [appSecurityGroup.id],
+            userData: base64UserData,
+            iamInstanceProfile: 
+            {
+                name: instanceProfile.name,
+            },
+            tags: 
+            {
+                Name: "Webapp-Launch-Template",
+            }
+        });
+
+        const webappLoadBalancer = new aws.lb.LoadBalancer("webappLoadBalancer", {
+            internal: false,
+            loadBalancerType: "application",
+            enableDeletionProtection: false,
+            securityGroups: [loadBalancerSecGroup.id],
+            // subnets: publicSubnets,
+            subnetMappings : publicSubnets.map(subnetId => ({ subnetId })),
+            vpcId: myVPC.id,
+
+        });
+
+        const webappTargetGroup = new aws.lb.TargetGroup("webappTargetGroup", {
+            port: 8080,
+            protocol: "HTTP",
+            target_type: "instance",
+            vpcId: myVPC.id,
+            healthCheck : {
+                enabled: true,
+                healthyThreshold: 2,
+                interval: 10,
+                matcher: "200",
+                path: "/healthz/",
+                port: 8080,
+                protocol: "HTTP",
+                timeout: 9,
+                unhealthyThreshold:5,
+            }
+        });
+
+        const loadbalancerListener = new aws.lb.Listener("loadbalancerListener", {
+            loadBalancerArn: webappLoadBalancer.arn,
+            port: 80,
+            protocol: "HTTP",
+            defaultActions: [{
+                type: "forward",
+                targetGroupArn: webappTargetGroup.arn,
+            }],
+        });
+
+        const webappAutoScaleGroup = new aws.autoscaling.Group("webappAutoScaleGroup", {
+            vpcZoneIdentifiers : publicSubnets,
+            vpcId: myVPC.id,
+            desiredCapacity: 1,
+            maxSize: 3,
+            minSize: 1,
+            defaultCooldown:60,
+            healthCheckGracePeriod : 60,
+            healthCheckType: "ELB",
+            targetGroupArns : [webappTargetGroup.arn],
+            launchTemplate: {
+                id:webappLaunchTemplate.id, 
+                version: webappLaunchTemplate.latestVersion
+            },
+            loadBalancerNames: [webappLoadBalancer.name]
+        });
+
+
+        // const webappTargetGroupAttachment = new aws.lb.TargetGroupAttachment("webappTargetGroupAttachment", {
+        //     targetGroupArn: webappTargetGroup.arn,
+        //     targetId: webappAutoScaleGroup.name,
+        // });
+        
+        // const webappAutoScaleAttachment = new aws.autoscaling.Attachment("webappAutoScaleAttachment", {
+        //     autoscalingGroupName: webappAutoScaleGroup.id,
+        //     elb: webappLoadBalancer.id,
+        // });
+
+
+        const autoScalePolicy = new aws.autoscaling.Policy("autoScalePolicy", {
+            policyType: "TargetTrackingScaling",
+            autoscalingGroupName : webappAutoScaleGroup.name,
+            adjustmentType : "ChangeInCapacity",
+            targetTrackingConfiguration: {
+                predefinedMetricSpecification: {
+                predefinedMetricType: "ASGAverageCPUUtilization",
+                },
+            targetValue: 5,
+        }});
+
+        // const autoScaleDownPolicy = new aws.autoscaling.Policy("autoScaleDownPolicy", {
+        //     policyType: "TargetTrackingScaling",
+        //     autoscalingGroupName : webappAutoScaleGroup.name,
+        //     adjustmentType : "ChangeInCapacity",
+        //     targetTrackingConfiguration: {
+        //         predefinedMetricSpecification: {
+        //         predefinedMetricType: "ASGAverageCPUUtilization",
+        //         },
+        //     targetValue: 5,
+        // }});
+
+
+
+        // const webapplistener = new aws.lb.Listener("webapplistener", {
+        //     loadBalancerArn: webappLoadBalancer.arn, // reference to the load balancer created above
+        //     port: 80, 
+        //     defaultActions: [{
+        //         type: "forward",
+        //         targetGroupArn: webappTargetGroup.arn, 
+        //     }]
+        // });
+
+        // const autoScaleDownPolicy = new aws.autoscaling.Policy("autoScaleDownPolicy", {
+        //     targetTrackingConfiguration: {
+        //         predefinedMetricSpecification: {
+        //         predefinedMetricType: "ASGAverageCPUUtilization",
+        //         },
+        //     targetValue: 7,
+        // }});
+
+        // const createEC2 = new aws.ec2.Instance("CreateEC2", {
+        //     ami: launchAmi,
+        //     instanceType: typeOfInstance,
+        //     vpcSecurityGroupIds: [appSecurityGroup.id],
+        //     vpcId: myVPC.id,
+        //     subnetId: publicSubnets[0],
+        //     disableApiTermination: 0,
+        //     volumeSize: 25,
+        //     volumeType: "gp2",
+        //     keyName: keyPair,
+        //     iamInstanceProfile: instanceProfile.name,
+        //     associatePublicIpAddress : 1,
+        //     userData: pulumi.interpolate`#!/bin/bash\nrm /home/webappuser/webapp/.env\necho "DATABASE_HOST: ${hostname}" >> /home/webappuser/webapp/.env\necho "DATABASE_USER: ${dbUser}" >> /home/webappuser/webapp/.env\necho "DATABASE_PASSWORD: ${dbPasswd}" >> /home/webappuser/webapp/.env\necho "DATABASE_NAME: ${dbName}" >> /home/webappuser/webapp/.env\necho "PORT: ${port}" >> /home/webappuser/webapp/.env\nchown webappuser:webappuser /home/webappuser/webapp/.env\nsudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/cloudwatch-config.json`,
+        //     tags: 
+        //     {
+        //         Name: "dev-iam-2",
+        //     }
+        // });
 
         const domainrecord = new aws.route53.Record("domainrecord", {
             zoneId: zoneId,
             name: '',
             type: "A",
-            records: [createEC2.publicIp],
-            ttl: 300
+            aliases: [{
+                name: webappLoadBalancer.dnsName,
+                zoneId: webappLoadBalancer.zoneId,
+                evaluateTargetHealth: true
+            }]
+
         });
 
         // exports.createEC2=createEC2;
         // exports.mySQLRDS=mySQLRDS;
+
     }
 );
 
-const appSecurityGroup = new aws.ec2.SecurityGroup("my-app-security-group", {
-    description: "My security group",
-    vpcId: myVPC.id,
-    ingress: [{
-        fromPort: 22,
-        toPort: 22,
-        protocol: "tcp",
-        cidrBlocks: ["0.0.0.0/0"],
-    },{
-        fromPort: 80,
-        toPort: 80,
-        protocol: "tcp",
-        cidrBlocks: ["0.0.0.0/0"],
-    },{
-        fromPort: 443,
-        toPort: 443,
-        protocol: "tcp",
-        cidrBlocks: ["0.0.0.0/0"],
-    },{
-        fromPort: 8080,
-        toPort: 8080,
-        protocol: "tcp",
-        cidrBlocks: ["0.0.0.0/0"],
-    }],
-    egress:[{
-        fromPort: 0,
-        toPort: 0,
-        protocol: "-1",
-        cidrBlocks: ["0.0.0.0/0"],
-    }],
-    tags: 
-    {
-        Name: "Application Security Group"
-    }
-});
 
-const rdsSecurityGroup = new aws.ec2.SecurityGroup("rds-security-group", {
-    description: "Security group for rds",
-    vpcId: myVPC.id,
-    ingress: [
-        {
-            protocol: "tcp",
-            fromPort: 3306,
-            toPort: 3306,
-            securityGroups: [ appSecurityGroup.id ],
-        },
-    ],
-    egress:[{
-        fromPort: 0,
-        toPort: 0,
-        protocol: "-1",
-        cidrBlocks: ["0.0.0.0/0"],
-    }],
-    tags: 
-    {
-        Name: "RDS Security Group"
-    }
-})
+
 
 
 const rdsParamterGroup = new aws.rds.ParameterGroup("default", {
@@ -264,10 +427,11 @@ const rdsParamterGroup = new aws.rds.ParameterGroup("default", {
 
 
 
+
+
 exports.vpcId = myVPC.id;
 exports.internetGw = internetGw.id;
 exports.publicRouteTable=publicRouteTable.id;
 exports.privateRouteTable=privateRouteTable.id;
-exports.rdsSecurityGroup=rdsSecurityGroup.id;
-// exports.policyAttachment=policyAttachment.id;
-// exports.role=role;
+// exports.rdsSecurityGroup=rdsSecurityGroup.id;
+// exports.loadBalancerSecGroup=loadBalancerSecGroup.id;
