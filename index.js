@@ -202,6 +202,7 @@ available
             role: ec2Role.name,
         });
 
+
         const mySQLRDS = new aws.rds.Instance("webappmysql", {
             allocatedStorage: 20,
             dbName: dbName,
@@ -385,8 +386,8 @@ available
                 zoneId: webappLoadBalancer.zoneId,
                 evaluateTargetHealth: true
             }]
-
         });
+
     }
 );
 
