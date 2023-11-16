@@ -202,8 +202,6 @@ available
             role: ec2Role.name,
         });
 
-
-
         const mySQLRDS = new aws.rds.Instance("webappmysql", {
             allocatedStorage: 20,
             dbName: dbName,
@@ -235,7 +233,7 @@ available
         });
 
 
-        const userData = pulumi.interpolate`#!/bin/bash\nrm /home/webappuser/webapp/.env\necho "DATABASE_HOST: ${hostname}" >> /home/webappuser/webapp/.env\necho "DATABASE_USER: ${dbUser}" >> /home/webappuser/webapp/.env\necho "DATABASE_PASSWORD: ${dbPasswd}" >> /home/webappuser/webapp/.env\necho "DATABASE_NAME: ${dbName}" >> /home/webappuser/webapp/.env\necho "PORT: ${port}" >> /home/webappuser/webapp/.env\nchown webappuser:webappuser /home/webappuser/webapp/.env\nsudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/cloudwatch-config.json`;
+        const userData = pulumi.interpolate`#!/bin/bash\nrm /home/webappuser/webapp/.env\necho "DATABASE_HOST: ${hostname}" >> /home/webappuser/webapp/.env\necho "DATABASE_USER: ${dbUser}" >> /home/webappuser/webapp/.env\necho "DATABASE_PASSWORD: ${dbPasswd}" >> /home/webappuser/webapp/.env\necho "DATABASE_NAME: ${dbName}" >> /home/webappuser/webapp/.env\necho "PORT: ${port}" >> /home/webappuser/webapp/.env\nchown webappuser:webappuser /home/webappuser/webapp/.env\nsudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/cloudwatch-config.json\nsudo apt-get install sysstat\nsudo systemctl restart webapp`;
 
         const base64UserData = userData.apply(data => Buffer.from(data).toString('base64'));
 
@@ -243,7 +241,7 @@ available
             imageId: launchAmi ,
             instanceType: typeOfInstance,
             keyName : keyPair,
-            associatePublicIpAddress : true,
+            // associatePublicIpAddress : true,
             vpcId: myVPC.id,
             vpcSecurityGroupIds: [appSecurityGroup.id],
             userData: base64UserData,
@@ -282,7 +280,7 @@ available
                 port: 8080,
                 protocol: "HTTP",
                 timeout: 9,
-                unhealthyThreshold:5,
+                unhealthyThreshold:10,
             }
         });
 
@@ -313,6 +311,60 @@ available
             loadBalancerNames: [webappLoadBalancer.name]
         });
 
+        const scaleUpPolicy = new aws.autoscaling.Policy("scaleUpPolicy", {
+            name: "scale-up-policy",
+            autoscalingGroupName: webappAutoScaleGroup.name,
+            adjustmentType: "ChangeInCapacity",
+            scalingAdjustment: 1,
+            cooldown: 60, 
+            policyType: "SimpleScaling",
+            metricAggregationType: "Average",
+        });
+         
+        const scaleDownPolicy = new aws.autoscaling.Policy("scaleDownPolicy", {
+            name: "scale-down-policy",
+            autoscalingGroupName: webappAutoScaleGroup.name,
+            adjustmentType: "ChangeInCapacity",
+            scalingAdjustment: -1, 
+            cooldown: 60, 
+            policyType: "SimpleScaling",
+            
+        });
+
+        const scaleUpAlarm = new aws.cloudwatch.MetricAlarm("scaleUpAlarm", {
+            alarmName: "scale_up_alarm",
+            alarmDescription: "Scale up when average CPU usage is above 5%",
+            comparisonOperator: "GreaterThanOrEqualToThreshold",
+            evaluationPeriods: 1,
+            metricName: "CPUUtilization",
+            namespace: "AWS/EC2",
+            period: 60,
+            threshold: 5,
+            statistic: "Average",
+            dimensions: {
+                AutoScalingGroupName: webappAutoScaleGroup.name,
+            },
+            actionsEnabled: true,
+            alarmActions: [scaleUpPolicy.arn],
+        });
+         
+        const scaleDownAlarm = new aws.cloudwatch.MetricAlarm("scaleDownAlarm", {
+            alarmName: "scale_down_alarm",
+            alarmDescription: "Scale down when average CPU usage is below 3%",
+            comparisonOperator: "LessThanOrEqualToThreshold",
+            evaluationPeriods: 1,
+            metricName: "CPUUtilization",
+            namespace: "AWS/EC2",
+            period: 60,
+            threshold: 3,
+            statistic: "Average",
+            dimensions: {
+                AutoScalingGroupName: webappAutoScaleGroup.name,
+            },
+            actionsEnabled: true,
+            alarmActions: [scaleDownPolicy.arn],
+        });
+
 
         // const webappTargetGroupAttachment = new aws.lb.TargetGroupAttachment("webappTargetGroupAttachment", {
         //     targetGroupArn: webappTargetGroup.arn,
@@ -322,67 +374,6 @@ available
         // const webappAutoScaleAttachment = new aws.autoscaling.Attachment("webappAutoScaleAttachment", {
         //     autoscalingGroupName: webappAutoScaleGroup.id,
         //     elb: webappLoadBalancer.id,
-        // });
-
-
-        const autoScalePolicy = new aws.autoscaling.Policy("autoScalePolicy", {
-            policyType: "TargetTrackingScaling",
-            autoscalingGroupName : webappAutoScaleGroup.name,
-            adjustmentType : "ChangeInCapacity",
-            targetTrackingConfiguration: {
-                predefinedMetricSpecification: {
-                predefinedMetricType: "ASGAverageCPUUtilization",
-                },
-            targetValue: 5,
-        }});
-
-        // const autoScaleDownPolicy = new aws.autoscaling.Policy("autoScaleDownPolicy", {
-        //     policyType: "TargetTrackingScaling",
-        //     autoscalingGroupName : webappAutoScaleGroup.name,
-        //     adjustmentType : "ChangeInCapacity",
-        //     targetTrackingConfiguration: {
-        //         predefinedMetricSpecification: {
-        //         predefinedMetricType: "ASGAverageCPUUtilization",
-        //         },
-        //     targetValue: 5,
-        // }});
-
-
-
-        // const webapplistener = new aws.lb.Listener("webapplistener", {
-        //     loadBalancerArn: webappLoadBalancer.arn, // reference to the load balancer created above
-        //     port: 80, 
-        //     defaultActions: [{
-        //         type: "forward",
-        //         targetGroupArn: webappTargetGroup.arn, 
-        //     }]
-        // });
-
-        // const autoScaleDownPolicy = new aws.autoscaling.Policy("autoScaleDownPolicy", {
-        //     targetTrackingConfiguration: {
-        //         predefinedMetricSpecification: {
-        //         predefinedMetricType: "ASGAverageCPUUtilization",
-        //         },
-        //     targetValue: 7,
-        // }});
-
-        // const createEC2 = new aws.ec2.Instance("CreateEC2", {
-        //     ami: launchAmi,
-        //     instanceType: typeOfInstance,
-        //     vpcSecurityGroupIds: [appSecurityGroup.id],
-        //     vpcId: myVPC.id,
-        //     subnetId: publicSubnets[0],
-        //     disableApiTermination: 0,
-        //     volumeSize: 25,
-        //     volumeType: "gp2",
-        //     keyName: keyPair,
-        //     iamInstanceProfile: instanceProfile.name,
-        //     associatePublicIpAddress : 1,
-        //     userData: pulumi.interpolate`#!/bin/bash\nrm /home/webappuser/webapp/.env\necho "DATABASE_HOST: ${hostname}" >> /home/webappuser/webapp/.env\necho "DATABASE_USER: ${dbUser}" >> /home/webappuser/webapp/.env\necho "DATABASE_PASSWORD: ${dbPasswd}" >> /home/webappuser/webapp/.env\necho "DATABASE_NAME: ${dbName}" >> /home/webappuser/webapp/.env\necho "PORT: ${port}" >> /home/webappuser/webapp/.env\nchown webappuser:webappuser /home/webappuser/webapp/.env\nsudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/cloudwatch-config.json`,
-        //     tags: 
-        //     {
-        //         Name: "dev-iam-2",
-        //     }
         // });
 
         const domainrecord = new aws.route53.Record("domainrecord", {
@@ -396,10 +387,6 @@ available
             }]
 
         });
-
-        // exports.createEC2=createEC2;
-        // exports.mySQLRDS=mySQLRDS;
-
     }
 );
 
