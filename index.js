@@ -1,8 +1,11 @@
 const pulumi = require('@pulumi/pulumi');
 const aws = require('@pulumi/aws');
+const gcp = require("@pulumi/gcp");
+const fs = require("fs");
+
 
 const config = new pulumi.Config();
-var vpcCIDR = config.require('cidrBlock');
+const vpcCIDR = config.require('cidrBlock');
 const publicCidrBlock = config.require('publicCidrBlock');
 const launchAmi = config.require('launchAMIID');
 const keyPair = config.require('keyPairName');
@@ -15,6 +18,22 @@ const dbParamterGroup = config.require('dbParamterGroup');
 const mysqlFamily = config.require('mysqlFamily');
 const zoneId = config.require('zoneId');
 const typeOfInstance = config.require('typeOfInstance');
+const roleToAdd = config.require('serviceaccountrole');
+const serviceaccountIDGCP = config.require('serviceaccountIDGCP');
+const BUCKETNAME = config.require('BUCKETNAME');
+const bucketlocation = config.require('bucketlocation');
+const privateKeyPath = config.require('privateKeyPath');
+const snsTopicName = config.require('snsTopicName');
+const SMTPUSER = config.require('SMTPUSER');
+const SMTPPASSWORD = config.require('SMTPPASSWORD');
+const SMTPHOST = config.require('SMTPHOST');
+const SENDEREMAIL = config.require('SENDEREMAIL');
+const SMTPPORT = config.require('SMTPPORT');
+const PROJECTID = config.require('PROJECTID');
+const LAMBDAFUNCTIONNAME = config.require('LAMBDAFUNCTIONNAME');
+const CCEMAILLIST = config.require('CCEMAILLIST');
+
+
 
 
 
@@ -197,7 +216,12 @@ available
             role: ec2Role.name,
             policyArn: "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
         });
-     
+
+        const snsAccessForEC2 = new aws.iam.RolePolicyAttachment("SNS ACCESS POLICY", {
+            role: ec2Role.name,
+            policyArn: "arn:aws:iam::aws:policy/AmazonSNSFullAccess",
+        });
+
         const instanceProfile = new aws.iam.InstanceProfile("EC2InstanceProfile", {
             role: ec2Role.name,
         });
@@ -233,8 +257,13 @@ available
             return parts[0]; // Take the first part, which is the hostname
         });
 
+        const topic = new aws.sns.Topic("mytopicfortest", {
+            name: snsTopicName
+        });
 
-        const userData = pulumi.interpolate`#!/bin/bash\nrm /home/webappuser/webapp/.env\necho "DATABASE_HOST: ${hostname}" >> /home/webappuser/webapp/.env\necho "DATABASE_USER: ${dbUser}" >> /home/webappuser/webapp/.env\necho "DATABASE_PASSWORD: ${dbPasswd}" >> /home/webappuser/webapp/.env\necho "DATABASE_NAME: ${dbName}" >> /home/webappuser/webapp/.env\necho "PORT: ${port}" >> /home/webappuser/webapp/.env\nchown webappuser:webappuser /home/webappuser/webapp/.env\nsudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/cloudwatch-config.json\nsudo apt-get install sysstat\nsudo systemctl restart webapp`;
+
+
+        const userData = pulumi.interpolate`#!/bin/bash\nrm /home/webappuser/webapp/.env\necho "DATABASE_HOST: ${hostname}" >> /home/webappuser/webapp/.env\necho "DATABASE_USER: ${dbUser}" >> /home/webappuser/webapp/.env\necho "DATABASE_PASSWORD: ${dbPasswd}" >> /home/webappuser/webapp/.env\necho "DATABASE_NAME: ${dbName}" >> /home/webappuser/webapp/.env\necho "PORT: ${port}" >> /home/webappuser/webapp/.env\necho "SNSTOPICARN: ${topic.arn}" >> /home/webappuser/webapp/.env\necho "AWSREGION: us-east-1" >> /home/webappuser/webapp/.env\necho "INFRA: AWS" >> /home/webappuser/webapp/.env\nchown webappuser:webappuser /home/webappuser/webapp/.env\nsudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a fetch-config -m ec2 -s -c file:/opt/cloudwatch-config.json\nsudo apt-get install sysstat\nsudo systemctl restart webapp`;
 
         const base64UserData = userData.apply(data => Buffer.from(data).toString('base64'));
 
@@ -242,7 +271,6 @@ available
             imageId: launchAmi ,
             instanceType: typeOfInstance,
             keyName : keyPair,
-            // associatePublicIpAddress : true,
             vpcId: myVPC.id,
             vpcSecurityGroupIds: [appSecurityGroup.id],
             userData: base64UserData,
@@ -261,7 +289,6 @@ available
             loadBalancerType: "application",
             enableDeletionProtection: false,
             securityGroups: [loadBalancerSecGroup.id],
-            // subnets: publicSubnets,
             subnetMappings : publicSubnets.map(subnetId => ({ subnetId })),
             vpcId: myVPC.id,
 
@@ -365,18 +392,6 @@ available
             actionsEnabled: true,
             alarmActions: [scaleDownPolicy.arn],
         });
-
-
-        // const webappTargetGroupAttachment = new aws.lb.TargetGroupAttachment("webappTargetGroupAttachment", {
-        //     targetGroupArn: webappTargetGroup.arn,
-        //     targetId: webappAutoScaleGroup.name,
-        // });
-        
-        // const webappAutoScaleAttachment = new aws.autoscaling.Attachment("webappAutoScaleAttachment", {
-        //     autoscalingGroupName: webappAutoScaleGroup.id,
-        //     elb: webappLoadBalancer.id,
-        // });
-
         const domainrecord = new aws.route53.Record("domainrecord", {
             zoneId: zoneId,
             name: '',
@@ -392,11 +407,8 @@ available
 );
 
 
-
-
-
-const rdsParamterGroup = new aws.rds.ParameterGroup("default", {
-    name: "rds-parameter-group",
+const rdsParamterGroup = new aws.rds.ParameterGroup("rdsParameterGroup", {
+    name: dbParamterGroup,
     family: mysqlFamily,
     description: `Mysql ${mysqlFamily} Family group`,
     parameters: [
@@ -412,8 +424,145 @@ const rdsParamterGroup = new aws.rds.ParameterGroup("default", {
 });
 
 
+// const uniqueSuffix = new Date().getTime().toString();
+
+// const uniqueBucketName = pulumi.interpolate`${bucketName}-${uniqueSuffix}`;
+
+// const bucket = new gcp.storage.Bucket("gcpbucket2435", {
+//     name: uniqueBucketName,
+//     location: bucketlocation,
+//     storageClass: "STANDARD",
+//     force_destroy: true,
+//     publicAccessPrevention: "enforced",
+//     versioning: {
+//         enabled: true,
+//     },
+// });
+
+const serviceAccount = new gcp.serviceaccount.Account("my-serviceAccount", {
+    accountId: serviceaccountIDGCP,
+    displayName: "My New Service Account",
+});
+
+// const objectAdminBinding = new gcp.storage.BucketIAMBinding("objectAdminBinding", {
+//     bucket: bucket.name,
+//     role: roleToAdd,
+//     members: [pulumi.interpolate`serviceAccount:${serviceAccount.email}`],
+// });
+
+const roles = ["roles/storage.admin"];
+ 
+for (const role of roles) {
+    const serviceIAMBinding = new gcp.projects.IAMMember(`myServiceAccountBinding-${role}`, {
+        role: role,
+        member: serviceAccount.email.apply(email => `serviceAccount:${email}`),
+        project: PROJECTID,
+    });
+}
+
+const serviceAccountKey = new gcp.serviceaccount.Key("my-serviceAccountKey", {
+    serviceAccountId: serviceAccount.name,
+    privateKeyType: "TYPE_GOOGLE_CREDENTIALS_FILE",
+});
+
+const topic = new aws.sns.Topic("mytopicfortest1", {
+    name: "test-topic2"
+});
+
+// const configFile = "./private-key-new2.json";
+// const configData = JSON.parse(fs.readFileSync(configFile, "utf8"));
+
+const lambdaRole = new aws.iam.Role("roleForLambda", {
+    assumeRolePolicy: pulumi.output({
+        Version: "2012-10-17",
+        Statement: [
+            {
+                Effect: "Allow",
+                Action: "sts:AssumeRole",
+                Principal: {
+                    Service: "lambda.amazonaws.com",
+                },
+            },
+        ],
+    }).apply(JSON.stringify),
+});
+
+const lambdaRolePolicy = new aws.iam.Policy("my-policy", {
+    policy: {
+        Version: "2012-10-17",
+        Statement: [
+            {
+                Effect: "Allow",
+                Action: "logs:CreateLogGroup",
+                Resource: "arn:aws:logs:us-east-1:387983162026:*",
+            },
+            {
+                Effect: "Allow",
+                Action: [
+                    "logs:CreateLogStream", 
+                    "logs:PutLogEvents"
+                ],
+                Resource: [`arn:aws:logs:us-east-1:387983162026:log-group:/aws/lambda/${LAMBDAFUNCTIONNAME}:*`],
+            },
+        ],
+    },
+});
+
+const iamForLambda = new aws.iam.Role("iamForLambda", {assumeRolePolicy: JSON.stringify({
+    Version: "2012-10-17",
+    Statement: [{
+        Action: "sts:AssumeRole",
+        Effect: "Allow",
+        Sid: "",
+        Principal: {
+            Service: "lambda.amazonaws.com",
+        },
+    }],
+})});
 
 
+const lambdaRolePolicyAttachment = new aws.iam.RolePolicyAttachment("lambdaRolePolicyAttachment", {
+    role: lambdaRole.name,
+    policyArn: lambdaRolePolicy.arn,
+});
+
+const lambdafunction = new aws.lambda.Function("TestLambda", {
+    name: LAMBDAFUNCTIONNAME,
+    code: new pulumi.asset.FileArchive("lambdafunction.zip"),
+    handler: "index.handler",
+    runtime: "nodejs18.x",
+    invokeArn: topic.arn,
+    publish: true,
+    timeout: 120,
+    environment: {
+        variables: 
+        {
+            PRIVATEKEY: serviceAccountKey.privateKey,
+            BUCKETNAME: BUCKETNAME,
+            SMTPUSER: SMTPUSER,
+            SMTPPASSWORD: SMTPPASSWORD,
+            SMTPHOST: SMTPHOST,
+            SENDEREMAIL: SENDEREMAIL,
+            SMTPPORT: SMTPPORT,
+            PROJECTID: PROJECTID,
+            CCEMAILLIST: CCEMAILLIST,
+        }
+    },
+    role: lambdaRole.arn,
+});
+
+const lambdaTriggerPoint = new aws.lambda.Permission("lambdaTriggerFunction", {
+    action: "lambda:InvokeFunction",
+    "function": lambdafunction.name,
+    principal: "sns.amazonaws.com",
+    sourceArn: topic.arn, 
+});
+
+const lambdaSubscription = new aws.sns.TopicSubscription("lambdaSubscription", {
+    protocol: "lambda",
+    endpoint: lambdafunction.arn,
+    topic : topic.arn
+});
 
 
 
@@ -421,5 +570,8 @@ exports.vpcId = myVPC.id;
 exports.internetGw = internetGw.id;
 exports.publicRouteTable=publicRouteTable.id;
 exports.privateRouteTable=privateRouteTable.id;
-// exports.rdsSecurityGroup=rdsSecurityGroup.id;
-// exports.loadBalancerSecGroup=loadBalancerSecGroup.id;
+// exports.GCPBUCKETNAME = bucket.name;
+
+
+
+// umple soonarcube scitools  understand   state diagrams visual paradigm
