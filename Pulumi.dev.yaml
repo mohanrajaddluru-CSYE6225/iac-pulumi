@@ -2,7 +2,9 @@ encryptionsalt: v1:42tP1QLebt0=:v1:v7KyiUTcU6ADUdKx:JpmGHQH5/Ylau5aKRDhbmEqnnNP5
 config:
   aws:region: us-east-1
   aws:profile: mohan-dev-iam
-  launchAMIID: "ami-0d41a7678bfd926eb"
+  gcp:project: development-406305
+  gcp:region: us-east1
+  launchAMIID: "ami-035ed2100ed54b8bf"
   cidrBlock: 10.10.0.0/16
   keyPairName: "development"
   publicCidrBlock: 0.0.0.0/0
@@ -12,8 +14,24 @@ config:
   dbName: test
   dbInstanceClass: db.t2.micro
   mysqlFamily: mysql8.0
-  dbParamterGroup: mohan
+  dbParamterGroup: mohan23
   zoneId: Z0715549LURCEQE4WQA5
   typeOfInstance: t2.micro
+  serviceaccountrole: "roles/storage.admin"
+  serviceaccountIDGCP: "bucketaccessaccount" 
+  displayName: "bucketaccessaccount"
+  BUCKETNAME: "assignmentsbucketformohan23"
+  bucketlocation: "us-east1"
+  privateKeyType: "TYPE_GOOGLE_CREDENTIALS_FILE"
+  privateKeyPath: "private-key-new2.json"
+  snsTopicName: "lambda-notification-service"
+  SMTPUSER: "AKIASP3WEJEXKKRV437X"
+  LAMBDAFUNCTIONNAME: "SERVERLESS"
+  SMTPPASSWORD: "BAQBw4rv/FRCpr7F0SKHxIt1sbEzyIKrJKvTRwtF8OrW"
+  SMTPHOST: "email-smtp.us-east-1.amazonaws.com"
+  SENDEREMAIL: "no-reply@demo.csye6225.mohanrajaddluru.me"
+  CCEMAILLIST: ["hello@gmail.com", "mohanawsa@gmail.com", "mohanrajaddluru@mohanrajaddluru.me", "mohanawsa+dev@gmail.com", "addlurumohanraj@gmail.com"]
+  SMTPPORT: 587
+  PROJECTID: "development-406305"
   tags:
     {Name : Created from Script}
