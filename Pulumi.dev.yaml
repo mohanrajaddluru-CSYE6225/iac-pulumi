@@ -1,4 +1,4 @@
-encryptionsalt: v1:42tP1QLebt0=:v1:v7KyiUTcU6ADUdKx:JpmGHQH5/Ylau5aKRDhbmEqnnNP5OQ==
+encryptionsalt: v1:+eMs4wlxZ4I=:v1:GpYnV2bJIDG/DO44:8WGayiehZCbFJfrZXekwtEB+PBjP3w==
 config:
   aws:region: us-east-1
   aws:profile: mohan-dev-iam
@@ -18,9 +18,9 @@ config:
   zoneId: Z0715549LURCEQE4WQA5
   typeOfInstance: t2.micro
   serviceaccountrole: "roles/storage.admin"
-  serviceaccountIDGCP: "bucketaccessaccount" 
-  displayName: "bucketaccessaccount"
-  BUCKETNAME: "assignmentsbucketformohan23"
+  serviceaccountIDGCP: "lambdaserviceaccount" 
+  displayName: "lambdaserviceaccount"
+  BUCKETNAME: "assignmentstore"
   bucketlocation: "us-east1"
   privateKeyType: "TYPE_GOOGLE_CREDENTIALS_FILE"
   privateKeyPath: "private-key-new2.json"
@@ -33,5 +33,7 @@ config:
   CCEMAILLIST: ["hello@gmail.com", "mohanawsa@gmail.com", "mohanrajaddluru@mohanrajaddluru.me", "mohanawsa+dev@gmail.com", "addlurumohanraj@gmail.com"]
   SMTPPORT: 587
   PROJECTID: "development-406305"
+  dynamoDBTableName: "emailtracktable"
   tags:
     {Name : Created from Script}
+
