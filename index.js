@@ -32,6 +32,7 @@ const SMTPPORT = config.require('SMTPPORT');
 const PROJECTID = config.require('PROJECTID');
 const LAMBDAFUNCTIONNAME = config.require('LAMBDAFUNCTIONNAME');
 const CCEMAILLIST = config.require('CCEMAILLIST');
+const dynamoDBTableName = config.require('dynamoDBTableName');
 
 
 
@@ -444,11 +445,11 @@ const serviceAccount = new gcp.serviceaccount.Account("my-serviceAccount", {
     displayName: "My New Service Account",
 });
 
-// const objectAdminBinding = new gcp.storage.BucketIAMBinding("objectAdminBinding", {
-//     bucket: bucket.name,
-//     role: roleToAdd,
-//     members: [pulumi.interpolate`serviceAccount:${serviceAccount.email}`],
-// });
+const objectAdminBinding = new gcp.storage.BucketIAMBinding("objectAdminBinding", {
+    bucket: BUCKETNAME,
+    role: roleToAdd,
+    members: [pulumi.interpolate`serviceAccount:${serviceAccount.email}`],
+});
 
 const roles = ["roles/storage.admin"];
  
@@ -465,12 +466,22 @@ const serviceAccountKey = new gcp.serviceaccount.Key("my-serviceAccountKey", {
     privateKeyType: "TYPE_GOOGLE_CREDENTIALS_FILE",
 });
 
-const topic = new aws.sns.Topic("mytopicfortest1", {
-    name: "test-topic2"
+const topic = new aws.sns.Topic("SNSWebappTopic", {
+    name: snsTopicName
 });
 
-// const configFile = "./private-key-new2.json";
-// const configData = JSON.parse(fs.readFileSync(configFile, "utf8"));
+
+const dynamoDBTable = new aws.dynamodb.Table("dynamoDBTableName", {
+    name: dynamoDBTableName,
+    attributes: [{
+        name: "emailid",
+        type: "S",
+    }],
+    hashKey: "emailid",
+    readCapacity: 5,
+    writeCapacity: 5,
+});
+
 
 const lambdaRole = new aws.iam.Role("roleForLambda", {
     assumeRolePolicy: pulumi.output({
@@ -487,25 +498,29 @@ const lambdaRole = new aws.iam.Role("roleForLambda", {
     }).apply(JSON.stringify),
 });
 
-const lambdaRolePolicy = new aws.iam.Policy("my-policy", {
-    policy: {
+const currentCallerIdentity = aws.getCallerIdentity();
+
+const lambdaRolePolicy = new aws.iam.Policy("policyForLambda", {
+    policy: pulumi.output({
         Version: "2012-10-17",
         Statement: [
             {
                 Effect: "Allow",
                 Action: "logs:CreateLogGroup",
-                Resource: "arn:aws:logs:us-east-1:387983162026:*",
+                Resource: "*",
             },
             {
                 Effect: "Allow",
-                Action: [
-                    "logs:CreateLogStream", 
-                    "logs:PutLogEvents"
-                ],
-                Resource: [`arn:aws:logs:us-east-1:387983162026:log-group:/aws/lambda/${LAMBDAFUNCTIONNAME}:*`],
+                Action: ["logs:CreateLogStream", "logs:PutLogEvents"],
+                Resource: `arn:aws:logs:${aws.config.region}:${aws.config.accountId}:log-group:/aws/lambda/${LAMBDAFUNCTIONNAME}:*`,
+            },
+            {
+                Effect: "Allow",
+                Action: "dynamodb:PutItem",
+                Resource: dynamoDBTable.arn,
             },
         ],
-    },
+    }).apply(JSON.stringify),
 });
 
 const iamForLambda = new aws.iam.Role("iamForLambda", {assumeRolePolicy: JSON.stringify({
@@ -525,6 +540,19 @@ const lambdaRolePolicyAttachment = new aws.iam.RolePolicyAttachment("lambdaRoleP
     role: lambdaRole.name,
     policyArn: lambdaRolePolicy.arn,
 });
+
+
+const logGroup = new aws.cloudwatch.LogGroup("myLogGroup", {
+    name: "lambdaloggroup",
+});
+
+// Create CloudWatch Logs stream
+const logStream = new aws.cloudwatch.LogStream("myLogStream", {
+    name: "lambdalogstream",
+    logGroupName: logGroup.name,
+});
+
+
 
 const lambdafunction = new aws.lambda.Function("TestLambda", {
     name: LAMBDAFUNCTIONNAME,
@@ -546,10 +574,16 @@ const lambdafunction = new aws.lambda.Function("TestLambda", {
             SMTPPORT: SMTPPORT,
             PROJECTID: PROJECTID,
             CCEMAILLIST: CCEMAILLIST,
+            DYNAMODBTABLENAME: dynamoDBTable.name
         }
     },
     role: lambdaRole.arn,
 });
+
+// const eventSourceMapping = new aws.lambda.EventSourceMapping("eventSourceMapping", {
+//     eventSourceArn: topic.arn,
+//     functionName: lambdafunction.name,
+// });
 
 const lambdaTriggerPoint = new aws.lambda.Permission("lambdaTriggerFunction", {
     action: "lambda:InvokeFunction",
@@ -564,14 +598,21 @@ const lambdaSubscription = new aws.sns.TopicSubscription("lambdaSubscription", {
     topic : topic.arn
 });
 
+const lambdaCloudWatchPermission = new aws.lambda.Permission("lambdaCloudWatchPermission", {
+    action: "lambda:InvokeFunction",
+    function: lambdafunction.arn,
+    principal: "logs.amazonaws.com",
+    sourceArn: pulumi.interpolate`${logGroup.arn}:${logStream.name}`,
+});
+
 
 
 exports.vpcId = myVPC.id;
 exports.internetGw = internetGw.id;
 exports.publicRouteTable=publicRouteTable.id;
 exports.privateRouteTable=privateRouteTable.id;
-// exports.GCPBUCKETNAME = bucket.name;
-
-
-
-// umple soonarcube scitools  understand   state diagrams visual paradigm
+exports.dynamoDBTableARN = dynamoDBTable.arn;
+exports.lambdafunctionARN = lambdafunction.arn;
+exports.lambdaRolePolicyARN = lambdaRolePolicy.arn;
+exports.lambdaRoleARN = lambdaRole.arn;
+exports.topicARN = topic.arn;
