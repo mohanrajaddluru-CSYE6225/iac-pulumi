@@ -10,6 +10,7 @@ config:
   publicCidrBlock: 0.0.0.0/0
   dbPasswd: password
   port: 8080
+  AWSREGION: 'us-east-1'
   dbUser: mohan
   dbName: test
   dbInstanceClass: db.t2.micro
@@ -34,6 +35,9 @@ config:
   SMTPPORT: 587
   PROJECTID: "development-406305"
   dynamoDBTableName: "emailtracktable"
+  lambdaFilePath: "serverless.zip"
+  lambdaIAMRoleCloudwatchPolicyARN: "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  lambdaIAMRoleDynamoDBPolicyARN: "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
   tags:
     {Name : Created from Script}
 
