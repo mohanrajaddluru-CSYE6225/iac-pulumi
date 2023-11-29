@@ -4,7 +4,7 @@ config:
   aws:profile: mohan-demo-iam
   gcp:project: development-406305
   gcp:region: us-east1
-  launchAMIID: "ami-01b1943982b482382"
+  launchAMIID: "ami-0ced4703eda9eb426"
   cidrBlock: 10.10.0.0/16
   keyPairName: "demo-iam"
   publicCidrBlock: 0.0.0.0/0
