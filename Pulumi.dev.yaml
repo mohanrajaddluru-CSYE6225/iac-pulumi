@@ -1,43 +1,48 @@
 encryptionsalt: v1:+eMs4wlxZ4I=:v1:GpYnV2bJIDG/DO44:8WGayiehZCbFJfrZXekwtEB+PBjP3w==
 config:
-  aws:region: us-east-1
   aws:profile: mohan-dev-iam
+  aws:region: us-east-1
   gcp:project: development-406305
   gcp:region: us-east1
-  launchAMIID: "ami-035ed2100ed54b8bf"
-  cidrBlock: 10.10.0.0/16
-  keyPairName: "development"
-  publicCidrBlock: 0.0.0.0/0
-  dbPasswd: password
-  port: 8080
-  AWSREGION: 'us-east-1'
-  dbUser: mohan
-  dbName: test
-  dbInstanceClass: db.t2.micro
-  mysqlFamily: mysql8.0
-  dbParamterGroup: mohan23
-  zoneId: Z0715549LURCEQE4WQA5
-  typeOfInstance: t2.micro
-  serviceaccountrole: "roles/storage.admin"
-  serviceaccountIDGCP: "lambdaserviceaccount" 
-  displayName: "lambdaserviceaccount"
-  BUCKETNAME: "assignmentstore"
-  bucketlocation: "us-east1"
-  privateKeyType: "TYPE_GOOGLE_CREDENTIALS_FILE"
-  privateKeyPath: "private-key-new2.json"
-  snsTopicName: "lambda-notification-service"
-  SMTPUSER: "AKIASP3WEJEXKKRV437X"
-  LAMBDAFUNCTIONNAME: "SERVERLESS"
-  SMTPPASSWORD: "BAQBw4rv/FRCpr7F0SKHxIt1sbEzyIKrJKvTRwtF8OrW"
-  SMTPHOST: "email-smtp.us-east-1.amazonaws.com"
-  SENDEREMAIL: "no-reply@demo.csye6225.mohanrajaddluru.me"
-  CCEMAILLIST: ["hello@gmail.com", "mohanawsa@gmail.com", "mohanrajaddluru@mohanrajaddluru.me", "mohanawsa+dev@gmail.com", "addlurumohanraj@gmail.com"]
-  SMTPPORT: 587
-  PROJECTID: "development-406305"
-  dynamoDBTableName: "emailtracktable"
-  lambdaFilePath: "serverless.zip"
-  lambdaIAMRoleCloudwatchPolicyARN: "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
-  lambdaIAMRoleDynamoDBPolicyARN: "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
-  tags:
-    {Name : Created from Script}
-
+  iac_pulumi:AWSREGION: us-east-1
+  iac_pulumi:BUCKETNAME: assignmentstore
+  iac_pulumi:CCEMAILLIST:
+    - hello@gmail.com
+    - mohanawsa@gmail.com
+    - mohanrajaddluru@mohanrajaddluru.me
+    - mohanawsa+dev@gmail.com
+    - addlurumohanraj@gmail.com
+  iac_pulumi:LAMBDAFUNCTIONNAME: SERVERLESS
+  iac_pulumi:PROJECTID: development-406305
+  iac_pulumi:SENDEREMAIL: no-reply@demo.csye6225.mohanrajaddluru.me
+  iac_pulumi:SMTPHOST: email-smtp.us-east-1.amazonaws.com
+  iac_pulumi:SMTPPASSWORD: BAQBw4rv/FRCpr7F0SKHxIt1sbEzyIKrJKvTRwtF8OrW
+  iac_pulumi:SMTPPORT: "587"
+  iac_pulumi:SMTPUSER: AKIASP3WEJEXKKRV437X
+  iac_pulumi:bucketlocation: us-east1
+  iac_pulumi:cidrBlock: 10.10.0.0/16
+  iac_pulumi:dbInstanceClass: db.t2.micro
+  iac_pulumi:dbName: test
+  iac_pulumi:dbParamterGroup: mohan23
+  iac_pulumi:dbPasswd: password
+  iac_pulumi:dbUser: mohan
+  iac_pulumi:demo: ""
+  iac_pulumi:displayName: lambdaserviceaccount
+  iac_pulumi:dynamoDBTableName: emailtracktable
+  iac_pulumi:keyPairName: development
+  iac_pulumi:lambdaFilePath: serverless.zip
+  iac_pulumi:lambdaIAMRoleCloudwatchPolicyARN: arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+  iac_pulumi:lambdaIAMRoleDynamoDBPolicyARN: arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+  iac_pulumi:launchAMIID: ami-01b1943982b482382
+  iac_pulumi:mysqlFamily: mysql8.0
+  iac_pulumi:port: "8080"
+  iac_pulumi:privateKeyPath: private-key-new2.json
+  iac_pulumi:privateKeyType: TYPE_GOOGLE_CREDENTIALS_FILE
+  iac_pulumi:publicCidrBlock: 0.0.0.0/0
+  iac_pulumi:serviceaccountIDGCP: lambdaserviceaccount
+  iac_pulumi:serviceaccountrole: roles/storage.admin
+  iac_pulumi:snsTopicName: lambda-notification-service
+  iac_pulumi:tags:
+    Name: Created from Script
+  iac_pulumi:typeOfInstance: t2.micro
+  iac_pulumi:zoneId: Z0715549LURCEQE4WQA5

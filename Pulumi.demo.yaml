@@ -1,20 +1,43 @@
 encryptionsalt: v1:YYO6uFZgsQQ=:v1:Kq6hzmewPtkrnPBk:9+vqeJ/D0bkrq2cx94Fr5Ii8IavzWw==
 config:
-  config:
   aws:region: us-east-1
-  aws:profile: mohan-dev-iam
-  launchAMIID: "ami-0d99aef9e03f4a649"
+  aws:profile: mohan-demo-iam
+  gcp:project: development-406305
+  gcp:region: us-east1
+  launchAMIID: "ami-01b1943982b482382"
   cidrBlock: 10.10.0.0/16
-  keyPairName: "development"
+  keyPairName: "demo-iam"
   publicCidrBlock: 0.0.0.0/0
   dbPasswd: password
   port: 8080
+  AWSREGION: 'us-east-1'
   dbUser: mohan
   dbName: test
   dbInstanceClass: db.t2.micro
   mysqlFamily: mysql8.0
   dbParamterGroup: mohan
-  zoneId: Z0715549LURCEQE4WQA5
+  zoneId: Z047578737J55OCIYHOAJ
   typeOfInstance: t2.micro
+  serviceaccountrole: "roles/storage.admin"
+  serviceaccountIDGCP: "lambdaserviceaccount" 
+  displayName: "lambdaserviceaccount"
+  BUCKETNAME: "assignmentstore"
+  bucketlocation: "us-east1"
+  privateKeyType: "TYPE_GOOGLE_CREDENTIALS_FILE"
+  privateKeyPath: "private-key-new2.json"
+  snsTopicName: "lambda-notification-service"
+  SMTPUSER: "AKIASP3WEJEXKKRV437X"
+  LAMBDAFUNCTIONNAME: "SERVERLESS"
+  SMTPPASSWORD: "BAQBw4rv/FRCpr7F0SKHxIt1sbEzyIKrJKvTRwtF8OrW"
+  SMTPHOST: "email-smtp.us-east-1.amazonaws.com"
+  SENDEREMAIL: "no-reply@demo.csye6225.mohanrajaddluru.me"
+  CCEMAILLIST: ["hello@gmail.com", "addluru.m@northeastern.edu","mohanawsa@gmail.com", "mohanrajaddluru@mohanrajaddluru.me", "mohanawsa+dev@gmail.com", "addlurumohanraj@gmail.com"]
+  SMTPPORT: 587
+  PROJECTID: "red-abstraction-406305"
+  dynamoDBTableName: "emailtracktable"
+  lambdaFilePath: "serverless.zip"
+  lambdaIAMRoleCloudwatchPolicyARN: "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+  lambdaIAMRoleDynamoDBPolicyARN: "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
   tags:
     {Name : Created from Script}
+
