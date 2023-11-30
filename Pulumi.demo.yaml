@@ -31,7 +31,7 @@ config:
   SMTPPASSWORD: "BAQBw4rv/FRCpr7F0SKHxIt1sbEzyIKrJKvTRwtF8OrW"
   SMTPHOST: "email-smtp.us-east-1.amazonaws.com"
   SENDEREMAIL: "no-reply@demo.csye6225.mohanrajaddluru.me"
-  CCEMAILLIST: ["hello@gmail.com", "addluru.m@northeastern.edu","mohanawsa@gmail.com", "mohanrajaddluru@mohanrajaddluru.me", "mohanawsa+dev@gmail.com", "addlurumohanraj@gmail.com"]
+  CCEMAILLIST: ["addluru.m@northeastern.edu", "mohanrajaddluru@mohanrajaddluru.me", "addlurumohanraj@gmail.com"]
   SMTPPORT: 587
   PROJECTID: "red-abstraction-406305"
   dynamoDBTableName: "emailtracktable"
