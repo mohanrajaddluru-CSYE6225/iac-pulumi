@@ -37,6 +37,7 @@ const lambdaFilePath = config.require('lambdaFilePath');
 const lambdaIAMRoleCloudwatchPolicyARN = config.require('lambdaIAMRoleCloudwatchPolicyARN');
 const lambdaIAMRoleDynamoDBPolicyARN = config.require('lambdaIAMRoleDynamoDBPolicyARN');
 const AWSREGION = config.require('AWSREGION');
+const SSLcertificateARN = config.require('SSLcertificateARN');
 
 
 
@@ -317,15 +318,31 @@ available
             }
         });
 
+        // const loadbalancerListener = new aws.lb.Listener("loadbalancerListener", {
+        //     loadBalancerArn: webappLoadBalancer.arn,
+        //     port: 80,
+        //     protocol: "HTTP",
+        //     defaultActions: [{
+        //         type: "forward",
+        //         targetGroupArn: webappTargetGroup.arn,
+        //     }],
+        // });
+
+
         const loadbalancerListener = new aws.lb.Listener("loadbalancerListener", {
             loadBalancerArn: webappLoadBalancer.arn,
-            port: 80,
-            protocol: "HTTP",
+            port: 443,
+            protocol: "HTTPS",
+            sslPolicy: "ELBSecurityPolicy-TLS13-1-2-2021-06",
+            certificateArn: SSLcertificateARN,
             defaultActions: [{
                 type: "forward",
                 targetGroupArn: webappTargetGroup.arn,
             }],
         });
+
+
+
 
         const webappAutoScaleGroup = new aws.autoscaling.Group("webappAutoScaleGroup", {
             vpcZoneIdentifiers : publicSubnets,

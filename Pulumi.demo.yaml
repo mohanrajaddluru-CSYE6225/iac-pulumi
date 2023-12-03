@@ -2,9 +2,9 @@ encryptionsalt: v1:YYO6uFZgsQQ=:v1:Kq6hzmewPtkrnPBk:9+vqeJ/D0bkrq2cx94Fr5Ii8Iavz
 config:
   aws:region: us-east-1
   aws:profile: mohan-demo-iam
-  gcp:project: development-406305
+  gcp:project: red-abstraction-406305
   gcp:region: us-east1
-  launchAMIID: "ami-0ced4703eda9eb426"
+  launchAMIID: "ami-0a8e1311b017dafdc"
   cidrBlock: 10.10.0.0/16
   keyPairName: "demo-iam"
   publicCidrBlock: 0.0.0.0/0
@@ -38,6 +38,7 @@ config:
   lambdaFilePath: "serverless.zip"
   lambdaIAMRoleCloudwatchPolicyARN: "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
   lambdaIAMRoleDynamoDBPolicyARN: "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+  SSLcertificateARN: "arn:aws:acm:us-east-1:171509565742:certificate/6bfae7b2-1433-46e5-ac2c-a6b455c2d76a"
   tags:
     {Name : Created from Script}
 
