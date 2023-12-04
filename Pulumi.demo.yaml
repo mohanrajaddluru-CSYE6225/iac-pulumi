@@ -4,7 +4,7 @@ config:
   aws:profile: mohan-demo-iam
   gcp:project: red-abstraction-406305
   gcp:region: us-east1
-  launchAMIID: "ami-0a8e1311b017dafdc"
+  launchAMIID: "ami-0a7ad4d2c12de0d8f"
   cidrBlock: 10.10.0.0/16
   keyPairName: "demo-iam"
   publicCidrBlock: 0.0.0.0/0
@@ -41,4 +41,7 @@ config:
   SSLcertificateARN: "arn:aws:acm:us-east-1:171509565742:certificate/6bfae7b2-1433-46e5-ac2c-a6b455c2d76a"
   tags:
     {Name : Created from Script}
+  loadBalancerListener: "webappLoadbalancerListener"
+  launchTemplateName: "webappLaunchTemplate"
+  autoScalingGroupName: "webappAutoScaleGroup"
 
