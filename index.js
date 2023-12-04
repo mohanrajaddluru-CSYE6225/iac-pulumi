@@ -38,6 +38,9 @@ const lambdaIAMRoleCloudwatchPolicyARN = config.require('lambdaIAMRoleCloudwatch
 const lambdaIAMRoleDynamoDBPolicyARN = config.require('lambdaIAMRoleDynamoDBPolicyARN');
 const AWSREGION = config.require('AWSREGION');
 const SSLcertificateARN = config.require('SSLcertificateARN');
+const loadBalancerListener = config.require('loadBalancerListener');
+const launchTemplateName = config.require('launchTemplateName');
+const autoScalingGroupName = config.require('autoScalingGroupName');
 
 
 
@@ -274,6 +277,7 @@ available
         const base64UserData = userData.apply(data => Buffer.from(data).toString('base64'));
 
         const webappLaunchTemplate = new aws.ec2.LaunchTemplate("webappLaunchTemplate", {
+            name: launchTemplateName,
             imageId: launchAmi ,
             instanceType: typeOfInstance,
             keyName : keyPair,
@@ -330,6 +334,7 @@ available
 
 
         const loadbalancerListener = new aws.lb.Listener("loadbalancerListener", {
+            name: loadBalancerListener,
             loadBalancerArn: webappLoadBalancer.arn,
             port: 443,
             protocol: "HTTPS",
@@ -345,6 +350,7 @@ available
 
 
         const webappAutoScaleGroup = new aws.autoscaling.Group("webappAutoScaleGroup", {
+            name: autoScalingGroupName,
             vpcZoneIdentifiers : publicSubnets,
             vpcId: myVPC.id,
             desiredCapacity: 1,

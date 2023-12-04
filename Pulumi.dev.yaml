@@ -42,3 +42,6 @@ config:
   }
   typeOfInstance: t2.micro
   zoneId: Z0715549LURCEQE4WQA5
+  loadBalancerListener: "webappLoadbalancerListener"
+  launchTemplateName: "webappLaunchTemplate"
+  autoScalingGroupName: "webappAutoScaleGroup"
